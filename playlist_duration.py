@@ -1,6 +1,14 @@
 from googleapiclient.discovery import build
 import re
 from datetime import timedelta
+import argparse 
+
+ap = argparse.ArgumentParser()
+ap.add_argument("-l", "--link", required=True)
+args = vars(ap.parse_args())
+
+
+
 
 api_key = '<Your API key>"
 
@@ -15,7 +23,7 @@ seconds_pattern = re.compile(r'(\d+)S')
 total_seconds = 0
 
 #get the playlist ID
-playlistId = input("Enter playlist link: ")
+playlistId = args["link"]
 playlistId = re.findall('=(\S+)',playlistId)[0]
 
 #To iterate over pages
