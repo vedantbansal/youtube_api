@@ -2,15 +2,26 @@ from googleapiclient.discovery import build
 import re
 from datetime import timedelta
 import argparse 
+import json
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-l", "--link", required=True)
 args = vars(ap.parse_args())
 
+#retrieve api key from secrets.json
+def get_api_key(json_file):
 
+    try: 
+        with open(json_file) as file:
+            file = json.load(file)
+            
+        return file["api-key"]
 
+    except: 
+        print("Unable to retrieve api key")
+        exit()
 
-api_key = '<Your API key>"
+api_key = get_api_key("secrets.json")
 
 #Create a service object
 service = build('youtube','v3',developerKey = api_key)
