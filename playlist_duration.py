@@ -4,8 +4,11 @@ from datetime import timedelta
 import argparse 
 import json
 
+#Parse the arguements from command line
 ap = argparse.ArgumentParser()
 ap.add_argument("-l", "--link", required=True)
+ap.add_argument("--starting-index", type=int, required=False)
+ap.add_argument("--ending-index", type=int, required=False)
 args = vars(ap.parse_args())
 
 #retrieve api key from secrets.json
@@ -20,6 +23,7 @@ def get_api_key(json_file):
     except: 
         print("Unable to retrieve api key")
         exit()
+
 
 api_key = get_api_key("secrets.json")
 
@@ -37,23 +41,54 @@ total_seconds = 0
 playlistId = args["link"]
 playlistId = re.findall('=(\S+)',playlistId)[0]
 
-#To iterate over pages
-nextPageToken = None
+#get the indexes of videos
+starting_index = args["starting_index"]
+ending_index = args["ending_index"]
 
-while True:
-    #Request data of playlist. 
-    request = service.playlistItems().list(
-        part = 'contentDetails',
-        playlistId = playlistId,
-        maxResults = 50,
-        pageToken= nextPageToken
-    )
-    response = request.execute()
+#Get a list containing all the ids in playlist
+def get_total_videoID():
+    
+    #To iterate over pages
+    nextPageToken = None    
+    total_vidID = []
 
-    #list of 50 video ids
-    vid_id = [item['contentDetails']['videoId'] for item in response['items'] ] 
+    while True:
+        #Request data of playlist. 
+        request = service.playlistItems().list(
+            part = 'contentDetails',
+            playlistId = playlistId,
+            maxResults = 100,
+            pageToken= nextPageToken
+        )
+        response = request.execute()
+
+        #list of 50 video ids
+        vid_id = [item['contentDetails']['videoId'] for item in response['items'] ] 
+        total_vidID += vid_id
+
+        #Increase pagetoken
+        nextPageToken = response.get('nextPageToken')
+
+        #Checks if next page is present, if not, breaks while loop
+        if not nextPageToken:
+            break
+    
+    #if duration is to be calculated of only a part of playlist
+    if(starting_index):
+        if(ending_index):
+            total_vidID = total_vidID[starting_index-1:ending_index]
+        else:
+            total_vidID = total_vidID[starting_index-1:]
+
+    return total_vidID
+
+#Calculate the duration
+total_vidID = get_total_videoID()
+for id in range(0,len(total_vidID),50):
+
 
     #Requesting data of video
+    vid_id = total_vidID[id:id+50]
     vid_request = service.videos().list(
         part = 'contentDetails',
         id = ','.join(vid_id)
@@ -85,12 +120,6 @@ while True:
         #sum of videos
         total_seconds += int(video_secs)
 
-    #Increase pagetoken
-    nextPageToken = response.get('nextPageToken')
-
-    #Checks if next page is present, if not, breaks while loop
-    if not nextPageToken:
-        break
     
 #find minutes, seconds and hours
 minutes, seconds = divmod(total_seconds, 60)
