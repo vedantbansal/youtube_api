@@ -3,6 +3,7 @@ import re
 from datetime import timedelta
 import argparse 
 import json
+import os
 
 #Parse the arguements from command line
 ap = argparse.ArgumentParser()
@@ -24,8 +25,9 @@ def get_api_key(json_file):
         print("Unable to retrieve api key")
         exit()
 
-
-api_key = get_api_key("secrets.json")
+#get current working directory
+cwd = '/'.join(__file__.split('/')[:-1])
+api_key = get_api_key(f"{cwd}/secrets.json")
 
 #Create a service object
 service = build('youtube','v3',developerKey = api_key)
